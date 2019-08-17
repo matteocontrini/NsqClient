@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NsqClient", "NsqClient\NsqC
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NsqClient.Tests", "NsqClient.Tests\NsqClient.Tests.csproj", "{0E8453F3-3F09-4598-A0A1-EE73DC902581}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NsqClient.Example", "NsqClient.Example\NsqClient.Example.csproj", "{3FD89248-0BA2-49F8-A4A5-F830D1E4CCAE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{0E8453F3-3F09-4598-A0A1-EE73DC902581}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0E8453F3-3F09-4598-A0A1-EE73DC902581}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0E8453F3-3F09-4598-A0A1-EE73DC902581}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3FD89248-0BA2-49F8-A4A5-F830D1E4CCAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3FD89248-0BA2-49F8-A4A5-F830D1E4CCAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3FD89248-0BA2-49F8-A4A5-F830D1E4CCAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3FD89248-0BA2-49F8-A4A5-F830D1E4CCAE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
