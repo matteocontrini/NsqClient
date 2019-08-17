@@ -3,7 +3,7 @@ namespace NsqClient.Frames
     enum ErrorType
     {
         Unknown,
-        InvalidState,
+        Invalid,
         BadBody,
         BadTopic,
         BadChannel,

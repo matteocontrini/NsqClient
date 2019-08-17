@@ -4,23 +4,23 @@ namespace NsqClient.Frames
 {
     class ErrorFrame : Frame
     {
-        public string Message { get; set; }
+        public string Message { get; }
         
         public ErrorType Type { get; private set; }
 
         public ErrorFrame(byte[] payload)
         {
-            ParseError(payload);
+            this.Message = Encoding.ASCII.GetString(payload);
+            
+            ParseError();
         }
 
-        private void ParseError(byte[] payload)
+        private void ParseError()
         {
-            this.Message = Encoding.ASCII.GetString(payload);
-
             switch (this.Message)
             {
                 case "E_INVALID":
-                    this.Type = ErrorType.InvalidState;
+                    this.Type = ErrorType.Invalid;
                     break;
                 case "E_BAD_BODY":
                     this.Type = ErrorType.BadBody;

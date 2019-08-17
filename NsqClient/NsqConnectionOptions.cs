@@ -9,5 +9,7 @@ namespace NsqClient
         public string Topic { get; set; }
 
         public string Channel { get; set; }
+
+        public int MaxInFlight { get; set; } = 1;
     }
 }

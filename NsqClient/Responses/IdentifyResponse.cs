@@ -48,13 +48,7 @@ namespace NsqClient.Responses
         
         public static IdentifyResponse ParseWithFrame(ResponseFrame frame)
         {
-            return DeserializeFromBytes(frame.Payload);
-        }
-        
-        private static IdentifyResponse DeserializeFromBytes(byte[] payload)
-        {
-            string json = Encoding.UTF8.GetString(payload);
-            return JsonConvert.DeserializeObject<IdentifyResponse>(json, Settings);
+            return JsonConvert.DeserializeObject<IdentifyResponse>(frame.Message, Settings);
         }
     }
 }

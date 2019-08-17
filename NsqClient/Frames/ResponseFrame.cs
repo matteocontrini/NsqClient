@@ -1,22 +1,39 @@
-using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace NsqClient.Frames
 {
     class ResponseFrame : Frame
     {
-        private static readonly byte[] HEARTBEAT_BYTES = Encoding.ASCII.GetBytes("_heartbeat_");
-        
-        public byte[] Payload { get; }
+        public string Message { get; }
+
+        public ResponseType Type { get; set; }
 
         public ResponseFrame(byte[] payload)
         {
-            this.Payload = payload;
+            this.Message = Encoding.ASCII.GetString(payload);
+
+            ParseResponse();
         }
 
-        public bool IsHeartbeat()
+        private void ParseResponse()
         {
-            return this.Payload.SequenceEqual(HEARTBEAT_BYTES);
+            if (this.Message.StartsWith("{"))
+            {
+                this.Type = ResponseType.Identify;
+            }
+            else switch (this.Message)
+            {
+                case "OK":
+                    this.Type = ResponseType.Ok;
+                    break;
+                case "_heartbeat_":
+                    this.Type = ResponseType.Heartbeat;
+                    break;
+                default:
+                    this.Type = ResponseType.Unknown;
+                    break;
+            }
         }
     }
 }

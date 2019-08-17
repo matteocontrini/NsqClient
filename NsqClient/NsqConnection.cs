@@ -17,6 +17,7 @@ namespace NsqClient
         private FrameReader reader;
         private IdentifyResponse identify;
 
+        public event EventHandler<NsqMessageEventArgs> OnMessage;
         public NsqConnection(NsqConnectionOptions options)
         {
             this.options = options;
@@ -33,11 +34,12 @@ namespace NsqClient
 
             await PerformHandshake();
             await Subscribe();
+            await SendReady();
             
             this.loopTask = Task.Run(ReadLoop);
         }
 
-        private Task WriteProtocolCommand(IToBytes command)
+        internal Task WriteProtocolCommand(IToBytes command)
         {
             byte[] bytes = command.ToBytes();
             return this.stream.WriteAsync(bytes, 0, bytes.Length);
@@ -81,19 +83,52 @@ namespace NsqClient
             }
         }
 
+        private async Task SendReady()
+        {
+            await WriteProtocolCommand(new ReadyCommand(this.options.MaxInFlight));
+        }
+
         private async Task ReadLoop()
         {
             while (true)
             {
                 Frame frame = await this.reader.ReadNext();
 
-                if (frame is ResponseFrame resp)
+                if (frame is ResponseFrame responseFrame)
                 {
-                    if (resp.IsHeartbeat())
+                    if (responseFrame.Type == ResponseType.Heartbeat)
                     {
                         await WriteProtocolCommand(new NopCommand());
                     }
+                    else
+                    {
+                        Console.WriteLine(responseFrame.Message);
+                    }
                 }
+                else if (frame is MessageFrame messageFrame)
+                {
+                    await RaiseMessageEvent(messageFrame);
+                }
+                else if (frame is ErrorFrame errorFrame)
+                {
+                    Console.WriteLine(errorFrame.Message);
+                    // TODO: log somewhere
+                }
+            }
+        }
+
+        private async Task RaiseMessageEvent(MessageFrame frame)
+        {
+            EventHandler<NsqMessageEventArgs> handler = this.OnMessage;
+            NsqMessageEventArgs args = new NsqMessageEventArgs(this, frame);
+
+            if (handler == null)
+            {
+                await args.Requeue();
+            }
+            else
+            {
+                handler.Invoke(this, args);
             }
         }
 
