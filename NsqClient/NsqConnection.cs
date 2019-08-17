@@ -18,6 +18,8 @@ namespace NsqClient
         private IdentifyResponse identify;
 
         public event EventHandler<NsqMessageEventArgs> OnMessage;
+        public event EventHandler<NsqOnErrorEventArgs> OnError;
+
         public NsqConnection(NsqConnectionOptions options)
         {
             this.options = options;
@@ -100,10 +102,8 @@ namespace NsqClient
                     {
                         await WriteProtocolCommand(new NopCommand());
                     }
-                    else
-                    {
-                        Console.WriteLine(responseFrame.Message);
-                    }
+                    
+                    // Otherwise, this is OK or CLOSE_WAIT, which can be ignored
                 }
                 else if (frame is MessageFrame messageFrame)
                 {
@@ -111,8 +111,7 @@ namespace NsqClient
                 }
                 else if (frame is ErrorFrame errorFrame)
                 {
-                    Console.WriteLine(errorFrame.Message);
-                    // TODO: log somewhere
+                    RaiseErrorEvent(errorFrame);
                 }
             }
         }
@@ -130,6 +129,11 @@ namespace NsqClient
             {
                 handler.Invoke(this, args);
             }
+        }
+
+        private void RaiseErrorEvent(ErrorFrame frame)
+        {
+            OnError?.Invoke(this, new NsqOnErrorEventArgs(frame.Message));
         }
 
         public void Dispose()
