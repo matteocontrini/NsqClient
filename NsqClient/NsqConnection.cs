@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using NsqClient.Commands;
@@ -16,9 +17,12 @@ namespace NsqClient
         private NetworkStream stream;
         private FrameReader reader;
         private IdentifyResponse identify;
+        private bool isConnected;
 
         public event EventHandler<NsqMessageEventArgs> OnMessage;
-        public event EventHandler<NsqOnErrorEventArgs> OnError;
+        public event EventHandler<NsqErrorEventArgs> OnError;
+        public event EventHandler<NsqDisconnectionEventArgs> OnDisconnected;
+        public event EventHandler<NsqReconnectionEventArgs> OnReconnected;
 
         public NsqConnection(NsqConnectionOptions options)
         {
@@ -27,7 +31,11 @@ namespace NsqClient
 
         public async Task Connect()
         {
-            this.client = new TcpClient();
+            this.client = new TcpClient()
+            {
+                SendTimeout = 3000,
+                ReceiveTimeout = 3000
+            };
 
             await this.client.ConnectAsync(this.options.Hostname, this.options.Port);
 
@@ -37,8 +45,11 @@ namespace NsqClient
             await PerformHandshake();
             await Subscribe();
             await SendReady();
-            
-            this.loopTask = Task.Run(ReadLoop);
+
+            if (this.loopTask == null)
+            {
+                this.loopTask = Task.Run(ReadLoop);
+            }
         }
 
         internal Task WriteProtocolCommand(IToBytes command)
@@ -65,7 +76,7 @@ namespace NsqClient
                 if (this.identify.AuthRequired)
                 {
                     throw new NsqException("Authentication is not supported");
-                }   
+                }
             }
             else
             {
@@ -94,25 +105,83 @@ namespace NsqClient
         {
             while (true)
             {
-                Frame frame = await this.reader.ReadNext();
-
-                if (frame is ResponseFrame responseFrame)
+                try
                 {
-                    if (responseFrame.Type == ResponseType.Heartbeat)
+                    await ProcessNextFrame();
+                }
+                catch (Exception ex)
+                {
+                    if (ex is SocketException ||
+                        ex is IOException)
                     {
-                        await WriteProtocolCommand(new NopCommand());
+                        await Reconnect();    
                     }
-                    
-                    // Otherwise, this is OK or CLOSE_WAIT, which can be ignored
+                    else
+                    {
+                        OnError?.Invoke(this, new NsqErrorEventArgs(ex));
+                    }
                 }
-                else if (frame is MessageFrame messageFrame)
+            }
+        }
+
+        private async Task Reconnect()
+        {
+            this.client.Dispose();
+            this.isConnected = false;
+            
+            this.OnDisconnected?.Invoke(this, new NsqDisconnectionEventArgs(true));
+
+            int attempts = 0;
+            DateTimeOffset start = DateTimeOffset.UtcNow;
+
+            while (!this.isConnected)
+            {
+                attempts++;
+                
+                try
                 {
-                    await RaiseMessageEvent(messageFrame);
+                    await Connect();
+                    this.isConnected = true;
                 }
-                else if (frame is ErrorFrame errorFrame)
+                catch (Exception ex)
                 {
-                    RaiseErrorEvent(errorFrame);
+                    if (ex is SocketException ||
+                        ex is IOException)
+                    {
+                        // keep trying    
+                    }
+                    else
+                    {
+                        OnError?.Invoke(this, new NsqErrorEventArgs(ex));
+                    }
                 }
+            }
+
+            TimeSpan interval = DateTimeOffset.UtcNow - start;
+            
+            this.OnReconnected?.Invoke(this, new NsqReconnectionEventArgs(attempts, interval));
+        }
+
+        private async Task ProcessNextFrame()
+        {
+            Frame frame = await this.reader.ReadNext();
+
+            if (frame is ResponseFrame responseFrame)
+            {
+                if (responseFrame.Type == ResponseType.Heartbeat)
+                {
+                    await WriteProtocolCommand(new NopCommand());
+                }
+
+                // Otherwise, this is OK or CLOSE_WAIT, which can be ignored
+            }
+            else if (frame is MessageFrame messageFrame)
+            {
+                await RaiseMessageEvent(messageFrame);
+            }
+            else if (frame is ErrorFrame errorFrame)
+            {
+                RaiseErrorEvent(errorFrame);
             }
         }
 
@@ -133,7 +202,8 @@ namespace NsqClient
 
         private void RaiseErrorEvent(ErrorFrame frame)
         {
-            OnError?.Invoke(this, new NsqOnErrorEventArgs(frame.Message));
+            NsqException exception = new NsqException(frame.Message);
+            OnError?.Invoke(this, new NsqErrorEventArgs(exception));
         }
 
         public void Dispose()

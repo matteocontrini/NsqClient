@@ -15,7 +15,7 @@ namespace NsqClient.Frames
                 case 2:
                     return new MessageFrame(payload);
                 default:
-                    throw new Exception("Invalid frame type received");
+                    throw new Exception("Invalid frame type received: " + frameType);
             }
         }
     }
