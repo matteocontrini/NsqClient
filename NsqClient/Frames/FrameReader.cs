@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
@@ -30,7 +31,12 @@ namespace NsqClient.Frames
         private async Task<int> ReadAsInt32(int length)
         {
             byte[] readBytes = new byte[length];
-            await this.stream.ReadAsync(readBytes, 0, length);
+            int amountRead = await this.stream.ReadAsync(readBytes, 0, length);
+
+            if (amountRead == 0)
+            {
+                throw new IOException("Zero bytes were read");
+            }
 
             if (BitConverter.IsLittleEndian)
             {

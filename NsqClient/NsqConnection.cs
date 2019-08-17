@@ -18,6 +18,7 @@ namespace NsqClient
         private FrameReader reader;
         private IdentifyResponse identify;
         private bool isConnected;
+        private bool isExiting;
 
         public event EventHandler<NsqMessageEventArgs> OnMessage;
         public event EventHandler<NsqErrorEventArgs> OnError;
@@ -103,7 +104,7 @@ namespace NsqClient
 
         private async Task ReadLoop()
         {
-            while (true)
+            while (!this.isExiting)
             {
                 try
                 {
@@ -112,13 +113,19 @@ namespace NsqClient
                 catch (Exception ex)
                 {
                     if (ex is SocketException ||
-                        ex is IOException)
+                        ex is IOException ||
+                        ex is ObjectDisposedException)
                     {
-                        await Reconnect();    
+                        if (this.isExiting)
+                        {
+                            break;
+                        }
+                        
+                        await Reconnect();
                     }
                     else
                     {
-                        OnError?.Invoke(this, new NsqErrorEventArgs(ex));
+                        this.OnError?.Invoke(this, new NsqErrorEventArgs(ex));
                     }
                 }
             }
@@ -146,13 +153,19 @@ namespace NsqClient
                 catch (Exception ex)
                 {
                     if (ex is SocketException ||
-                        ex is IOException)
+                        ex is IOException ||
+                        ex is ObjectDisposedException)
                     {
-                        // keep trying    
+                        if (this.isExiting)
+                        {
+                            return;
+                        }
+                        
+                        // keep trying
                     }
                     else
                     {
-                        OnError?.Invoke(this, new NsqErrorEventArgs(ex));
+                        this.OnError?.Invoke(this, new NsqErrorEventArgs(ex));
                     }
                 }
             }
@@ -203,13 +216,14 @@ namespace NsqClient
         private void RaiseErrorEvent(ErrorFrame frame)
         {
             NsqException exception = new NsqException(frame.Message);
-            OnError?.Invoke(this, new NsqErrorEventArgs(exception));
+            this.OnError?.Invoke(this, new NsqErrorEventArgs(exception));
         }
 
         public void Dispose()
         {
+            this.isExiting = true;
             this.client.Close();
-            // TODO: stop loop
+            this.OnDisconnected?.Invoke(this, new NsqDisconnectionEventArgs(false));
         }
     }
 }
