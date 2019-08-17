@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -32,7 +33,7 @@ namespace NsqClient.Commands
                 Hostname = Environment.MachineName,
                 ClientId = Environment.MachineName,
                 FeatureNegotiation = true,
-                UserAgent = "NsqClient/1.0"
+                UserAgent = "NsqClient/" + VersionHelper.Version
             };
         }
 
