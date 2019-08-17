@@ -48,20 +48,24 @@ namespace NsqClient
             await WriteProtocolCommand(new ProtocolVersion());
             await WriteProtocolCommand(new IdentifyCommand());
             
-            ResponseFrame frame = await this.reader.ReadNext() as ResponseFrame;
+            Frame frame = await this.reader.ReadNext();
 
-            // TODO: might be error
-            
-            if (frame is null)
+            if (frame is ErrorFrame errorFrame)
+            {
+                throw new NsqException("Error during handshake: " + errorFrame.Message);   
+            }
+            else if (frame is ResponseFrame responseFrame)
+            {
+                this.identify = IdentifyResponse.ParseWithFrame(responseFrame);
+
+                if (this.identify.AuthRequired)
+                {
+                    throw new NsqException("Authentication is not supported");
+                }   
+            }
+            else
             {
                 throw new NsqException("Unexpected response during handshake");
-            }
-
-            this.identify = IdentifyResponse.ParseWithFrame(frame);
-
-            if (this.identify.AuthRequired)
-            {
-                throw new NsqException("Authentication is not supported");
             }
         }
 
