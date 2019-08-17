@@ -1,3 +1,4 @@
+using System;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using NsqClient.Commands;
@@ -7,34 +8,39 @@ using NsqClient.Responses;
 
 namespace NsqClient
 {
-    public class NsqConnection
+    public class NsqConnection : IDisposable
     {
-        private readonly string nsqHostname;
-        private readonly int nsqPort;
+        private readonly NsqConnectionOptions options;
         private TcpClient client;
         private Task loopTask;
         private NetworkStream stream;
         private FrameReader reader;
         private IdentifyResponse identify;
 
-        public NsqConnection(string nsqHostname, int nsqPort)
+        public NsqConnection(NsqConnectionOptions options)
         {
-            this.nsqHostname = nsqHostname;
-            this.nsqPort = nsqPort;
+            this.options = options;
         }
 
         public async Task Connect()
         {
             this.client = new TcpClient();
 
-            await this.client.ConnectAsync(this.nsqHostname, this.nsqPort);
+            await this.client.ConnectAsync(this.options.Hostname, this.options.Port);
 
             this.stream = this.client.GetStream();
             this.reader = new FrameReader(this.stream);
 
             await PerformHandshake();
+            await Subscribe();
             
             this.loopTask = Task.Run(ReadLoop);
+        }
+
+        private Task WriteProtocolCommand(IToBytes command)
+        {
+            byte[] bytes = command.ToBytes();
+            return this.stream.WriteAsync(bytes, 0, bytes.Length);
         }
 
         private async Task PerformHandshake()
@@ -44,6 +50,8 @@ namespace NsqClient
             
             ResponseFrame frame = await this.reader.ReadNext() as ResponseFrame;
 
+            // TODO: might be error
+            
             if (frame is null)
             {
                 throw new NsqException("Unexpected response during handshake");
@@ -57,10 +65,16 @@ namespace NsqClient
             }
         }
 
-        private Task WriteProtocolCommand(IToBytes command)
+        private async Task Subscribe()
         {
-            byte[] bytes = command.ToBytes();
-            return this.stream.WriteAsync(bytes, 0, bytes.Length);
+            await WriteProtocolCommand(new SubscribeCommand(this.options.Topic, this.options.Channel));
+
+            Frame frame = await this.reader.ReadNext();
+
+            if (frame is ErrorFrame error)
+            {
+                throw new NsqException("Unexpected response while subscribing: " + error.Message);
+            }
         }
 
         private async Task ReadLoop()
@@ -77,6 +91,12 @@ namespace NsqClient
                     }
                 }
             }
+        }
+
+        public void Dispose()
+        {
+            this.client.Close();
+            // TODO: stop loop
         }
     }
 }

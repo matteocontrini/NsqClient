@@ -4,12 +4,12 @@ namespace NsqClient.Commands
 {
     public class NopCommand : IToBytes
     {
-        private string payload = "NOP\n";
+        private readonly byte[] payload = Encoding.ASCII.GetBytes("NOP\n");
 
 
         public byte[] ToBytes()
         {
-            return Encoding.ASCII.GetBytes(this.payload);
+            return this.payload;
         }
     }
 }
