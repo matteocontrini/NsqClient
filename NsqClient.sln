@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NsqClient", "NsqClient\NsqClient.csproj", "{27891319-395F-422C-9329-966D58AD0FBE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NsqClient.Tests", "NsqClient.Tests\NsqClient.Tests.csproj", "{0E8453F3-3F09-4598-A0A1-EE73DC902581}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{27891319-395F-422C-9329-966D58AD0FBE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{27891319-395F-422C-9329-966D58AD0FBE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{27891319-395F-422C-9329-966D58AD0FBE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{27891319-395F-422C-9329-966D58AD0FBE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E8453F3-3F09-4598-A0A1-EE73DC902581}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E8453F3-3F09-4598-A0A1-EE73DC902581}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E8453F3-3F09-4598-A0A1-EE73DC902581}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E8453F3-3F09-4598-A0A1-EE73DC902581}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
