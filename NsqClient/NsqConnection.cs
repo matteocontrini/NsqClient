@@ -1,4 +1,3 @@
-using System;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using NsqClient.Commands;
@@ -13,7 +12,7 @@ namespace NsqClient
         private readonly string nsqHostname;
         private readonly int nsqPort;
         private TcpClient client;
-        private Task readLoop;
+        private Task loopTask;
         private NetworkStream stream;
         private FrameReader reader;
         private IdentifyResponse identify;
@@ -35,7 +34,7 @@ namespace NsqClient
 
             await PerformHandshake();
             
-            this.readLoop = Task.Run(ReadLoop);
+            this.loopTask = Task.Run(ReadLoop);
         }
 
         private async Task PerformHandshake()
@@ -66,14 +65,18 @@ namespace NsqClient
 
         private async Task ReadLoop()
         {
-//            while (true)
-//            {
-//                Frame frame = await this.reader.ReadNext();
-//
-//                if (frame is ResponseFrame f)
-//                {
-//                }
-//            }
+            while (true)
+            {
+                Frame frame = await this.reader.ReadNext();
+
+                if (frame is ResponseFrame resp)
+                {
+                    if (resp.IsHeartbeat())
+                    {
+                        await WriteProtocolCommand(new NopCommand());
+                    }
+                }
+            }
         }
     }
 }
