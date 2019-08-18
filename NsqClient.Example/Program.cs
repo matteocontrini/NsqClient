@@ -32,12 +32,12 @@ namespace NsqClient.Example
 
         private static void OnReconnected(object sender, NsqReconnectionEventArgs e)
         {
-            Console.WriteLine($"Reconnected after {e.Attempts} attempts in {e.ReconnectedAfter.TotalSeconds} seconds");
+            Console.WriteLine($"OnReconnected: Reconnected after {e.Attempts} attempts in {e.ReconnectedAfter.TotalSeconds} seconds");
         }
 
         private static void OnDisconnected(object sender, NsqDisconnectionEventArgs e)
         {
-            Console.WriteLine("Disconnected. Will reconnect? " + e.WillReconnect);
+            Console.WriteLine("OnDisconnected: Disconnected. Will reconnect? " + e.WillReconnect);
         }
 
         private static async void OnMessage(object sender, NsqMessageEventArgs eventArgs)
@@ -49,7 +49,7 @@ namespace NsqClient.Example
 
         private static void OnError(object sender, NsqErrorEventArgs eventArgs)
         {
-            Console.WriteLine(eventArgs.Exception);
+            Console.WriteLine("OnError: {0}", eventArgs.Exception);
         }
     }
 }

@@ -1,8 +1,8 @@
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using NsqClient.Commands;
@@ -22,8 +22,9 @@ namespace NsqClient
         private IdentifyResponse identify;
         private bool isConnected;
         private bool isExiting;
-        private TraceSource tracer = new TraceSource(nameof(NsqConnection), SourceLevels.All);
-        
+        private readonly TraceSource tracer;
+        private readonly ConcurrentQueue<TaskCompletionSource<bool>> callbacksQueue;
+
         public event EventHandler<NsqMessageEventArgs> OnMessage;
         public event EventHandler<NsqErrorEventArgs> OnError;
         public event EventHandler<NsqDisconnectionEventArgs> OnDisconnected;
@@ -32,10 +33,14 @@ namespace NsqClient
         public NsqConnection(NsqConnectionOptions options)
         {
             this.options = options;
+            this.callbacksQueue = new ConcurrentQueue<TaskCompletionSource<bool>>();
+            this.tracer = new TraceSource(nameof(NsqConnection), SourceLevels.All);
         }
 
         public async Task Connect()
         {
+            this.tracer.TraceInformation("Starting TCP connection...");
+            
             this.client = new TcpClient()
             {
                 SendTimeout = 3000,
@@ -43,6 +48,8 @@ namespace NsqClient
             };
 
             await this.client.ConnectAsync(this.options.Hostname, this.options.Port);
+            
+            this.tracer.TraceInformation("Connected. Preparing connection...");
 
             this.stream = this.client.GetStream();
             this.reader = new FrameReader(this.stream);
@@ -50,9 +57,13 @@ namespace NsqClient
             await PerformHandshake();
             await Subscribe();
             await SendReady();
+            
+            this.tracer.TraceInformation("Connection is ready");
+            this.isConnected = true;
 
             if (this.loopTask == null)
             {
+                this.tracer.TraceInformation("Starting IO loop");
                 this.loopTask = Task.Run(ReadLoop);
             }
         }
@@ -64,7 +75,30 @@ namespace NsqClient
 
         public async Task Publish(string topicName, byte[] body)
         {
-            await WriteProtocolCommand(new PublishCommand(topicName, body));
+            if (!this.isConnected || this.isExiting)
+            {
+                throw new NsqException("The connection is not ready");
+            }
+            
+            this.tracer.TraceInformation("Publishing message to topic {0}", topicName);
+
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            this.callbacksQueue.Enqueue(tcs);
+
+            try
+            {
+                await WriteProtocolCommand(new PublishCommand(topicName, body));
+            }
+            catch (Exception ex)
+            {
+                this.tracer.TraceEvent(TraceEventType.Error, 0, "Publishing failed with exception: {0}", ex);
+                throw new NsqException("Publishing failed. See inner exception", ex);
+            }
+
+            // Wait for OK or fail
+            await tcs.Task;
+            
+            this.tracer.TraceInformation("Published message to topic {0}", topicName);
         }
 
         internal Task WriteProtocolCommand(IToBytes command)
@@ -120,6 +154,8 @@ namespace NsqClient
         {
             while (!this.isExiting)
             {
+                this.tracer.TraceInformation("Reading next frame");
+
                 try
                 {
                     await ProcessNextFrame();
@@ -134,10 +170,11 @@ namespace NsqClient
                     {
                         if (this.isExiting)
                         {
-                            this.tracer.TraceInformation("Not attempting reconnection because exiting");
+                            Disconnect(willReconnect: false);
                             break;
                         }
-                        
+                     
+                        Disconnect(willReconnect: true);
                         await Reconnect();
                     }
                     else
@@ -148,13 +185,17 @@ namespace NsqClient
             }
         }
 
-        private async Task Reconnect()
+        private void Disconnect(bool willReconnect)
         {
             this.client.Dispose();
             this.isConnected = false;
             
-            this.OnDisconnected?.Invoke(this, new NsqDisconnectionEventArgs(true));
+            this.OnDisconnected?.Invoke(this, new NsqDisconnectionEventArgs(willReconnect));
+            FailCallbacks();   
+        }
 
+        private async Task Reconnect()
+        {
             int attempt = 0;
             DateTimeOffset start = DateTimeOffset.UtcNow;
 
@@ -166,7 +207,6 @@ namespace NsqClient
                 try
                 {
                     await Connect();
-                    this.isConnected = true;
                 }
                 catch (Exception ex)
                 {
@@ -192,6 +232,7 @@ namespace NsqClient
             }
 
             TimeSpan interval = DateTimeOffset.UtcNow - start;
+            this.tracer.TraceInformation("Reconnected");
             
             this.OnReconnected?.Invoke(this, new NsqReconnectionEventArgs(attempt, interval));
         }
@@ -202,20 +243,43 @@ namespace NsqClient
 
             if (frame is ResponseFrame responseFrame)
             {
+                this.tracer.TraceInformation("Read ResponseFrame of type {0}", responseFrame.Type);
+                
                 if (responseFrame.Type == ResponseType.Heartbeat)
                 {
                     await WriteProtocolCommand(new NopCommand());
                 }
-
-                // Otherwise, this is OK or CLOSE_WAIT, which can be ignored
+                else if (responseFrame.Type == ResponseType.Ok)
+                {
+                    // If publishing, unlock the Publish task that is awaiting
+                    if (this.callbacksQueue.TryDequeue(out TaskCompletionSource<bool> tcs))
+                    {
+                        tcs.TrySetResult(true);
+                    }
+                }
             }
             else if (frame is MessageFrame messageFrame)
             {
+                this.tracer.TraceInformation("Read MessageFrame with ID {0}", messageFrame.MessageId);
+                
                 await RaiseMessageEvent(messageFrame);
             }
             else if (frame is ErrorFrame errorFrame)
             {
-                RaiseErrorEvent(errorFrame);
+                // Note: we don't always get here, because the connection is closed by nsqd when errors happen
+                // https://nsq.io/clients/building_client_libraries.html#a-brief-interlude-on-errors
+                
+                this.tracer.TraceInformation("Read ErrorFrame with message {0}", errorFrame.Message);
+                
+                NsqException exception = new NsqException(errorFrame.Message);
+                
+                RaiseErrorEvent(exception);
+                
+                // If publishing, throw the exception
+                if (this.callbacksQueue.TryDequeue(out TaskCompletionSource<bool> tcs))
+                {
+                    tcs.TrySetException(exception);
+                }
             }
         }
 
@@ -234,17 +298,26 @@ namespace NsqClient
             }
         }
 
-        private void RaiseErrorEvent(ErrorFrame frame)
+        private void RaiseErrorEvent(NsqException exception)
         {
-            NsqException exception = new NsqException(frame.Message);
             this.OnError?.Invoke(this, new NsqErrorEventArgs(exception));
+        }
+        
+        private void FailCallbacks()
+        {
+            while (this.callbacksQueue.TryDequeue(out TaskCompletionSource<bool> tcs))
+            {
+                tcs.TrySetException(new NsqException("Connection was lost"));
+            }
         }
 
         public void Dispose()
         {
+            this.tracer.TraceInformation("Closing everything... Bye");
+
             this.isExiting = true;
-            this.client.Close();
-            this.OnDisconnected?.Invoke(this, new NsqDisconnectionEventArgs(false));
+            
+            Disconnect(willReconnect: false);
         }
     }
 }
