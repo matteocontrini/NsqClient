@@ -6,7 +6,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace NsqClient.Commands
 {
-    class IdentifyCommand : IToBytes
+    class IdentifyCommand : ICommand
     {
         private readonly byte[] prefix = Encoding.ASCII.GetBytes("IDENTIFY\n");
         private readonly IdentifyRequest identify;

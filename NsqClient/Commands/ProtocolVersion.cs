@@ -2,7 +2,7 @@ using System.Text;
 
 namespace NsqClient.Commands
 {
-    public class ProtocolVersion : IToBytes
+    public class ProtocolVersion : ICommand
     {
         // [space][space][V][2]
         private readonly byte[] payload = Encoding.ASCII.GetBytes("  V2"); 

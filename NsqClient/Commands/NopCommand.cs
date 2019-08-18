@@ -2,7 +2,7 @@ using System.Text;
 
 namespace NsqClient.Commands
 {
-    public class NopCommand : IToBytes
+    public class NopCommand : ICommand
     {
         private readonly byte[] payload = Encoding.ASCII.GetBytes("NOP\n");
 

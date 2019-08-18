@@ -101,7 +101,7 @@ namespace NsqClient
             this.tracer.TraceInformation("Published message to topic {0}", topicName);
         }
 
-        internal Task WriteProtocolCommand(IToBytes command)
+        internal Task WriteProtocolCommand(ICommand command)
         {
             byte[] bytes = command.ToBytes();
             return this.stream.WriteAsync(bytes, 0, bytes.Length);
