@@ -49,7 +49,7 @@ namespace NsqClient
 
             await this.client.ConnectAsync(this.options.Hostname, this.options.Port);
             
-            this.tracer.TraceInformation("Connected. Preparing connection...");
+            this.tracer.TraceEvent(TraceEventType.Verbose, 0, "Connected. Preparing connection...");
 
             this.stream = this.client.GetStream();
             this.reader = new FrameReader(this.stream);
@@ -63,7 +63,7 @@ namespace NsqClient
 
             if (this.loopTask == null)
             {
-                this.tracer.TraceInformation("Starting IO loop");
+                this.tracer.TraceEvent(TraceEventType.Verbose, 0, "Starting IO loop");
                 this.loopTask = Task.Run(ReadLoop);
             }
         }
@@ -154,7 +154,7 @@ namespace NsqClient
         {
             while (!this.isExiting)
             {
-                this.tracer.TraceInformation("Reading next frame");
+                this.tracer.TraceEvent(TraceEventType.Verbose, 0, "Reading next frame");
 
                 try
                 {
@@ -202,7 +202,7 @@ namespace NsqClient
             while (!this.isConnected)
             {
                 attempt++;
-                this.tracer.TraceInformation("Reconnection attempt {0}", attempt);
+                this.tracer.TraceEvent(TraceEventType.Verbose, 0, "Reconnection attempt {0}", attempt);
                 
                 try
                 {
@@ -218,7 +218,7 @@ namespace NsqClient
                     {
                         if (this.isExiting)
                         {
-                            this.tracer.TraceInformation("Interrupting reconnection for exiting");
+                            this.tracer.TraceEvent(TraceEventType.Verbose, 0, "Interrupting reconnection for exiting");
                             return;
                         }
                         
@@ -232,7 +232,7 @@ namespace NsqClient
             }
 
             TimeSpan interval = DateTimeOffset.UtcNow - start;
-            this.tracer.TraceInformation("Reconnected");
+            this.tracer.TraceInformation("Reconnected after {0} attempts and {1} seconds", attempt, interval.TotalSeconds);
             
             this.OnReconnected?.Invoke(this, new NsqReconnectionEventArgs(attempt, interval));
         }
@@ -243,7 +243,7 @@ namespace NsqClient
 
             if (frame is ResponseFrame responseFrame)
             {
-                this.tracer.TraceInformation("Read ResponseFrame of type {0}", responseFrame.Type);
+                this.tracer.TraceEvent(TraceEventType.Verbose, 0, "Read ResponseFrame of type {0}", responseFrame.Type);
                 
                 if (responseFrame.Type == ResponseType.Heartbeat)
                 {
@@ -260,7 +260,7 @@ namespace NsqClient
             }
             else if (frame is MessageFrame messageFrame)
             {
-                this.tracer.TraceInformation("Read MessageFrame with ID {0}", messageFrame.MessageId);
+                this.tracer.TraceEvent(TraceEventType.Verbose, 0, "Read MessageFrame with ID {0}", messageFrame.MessageId);
                 
                 await RaiseMessageEvent(messageFrame);
             }
@@ -269,7 +269,7 @@ namespace NsqClient
                 // Note: we don't always get here, because the connection is closed by nsqd when errors happen
                 // https://nsq.io/clients/building_client_libraries.html#a-brief-interlude-on-errors
                 
-                this.tracer.TraceInformation("Read ErrorFrame with message {0}", errorFrame.Message);
+                this.tracer.TraceEvent(TraceEventType.Verbose, 0, "Read ErrorFrame with message {0}", errorFrame.Message);
                 
                 NsqException exception = new NsqException(errorFrame.Message);
                 
