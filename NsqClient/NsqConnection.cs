@@ -1,6 +1,9 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
 using NsqClient.Commands;
 using NsqClient.Exceptions;
@@ -19,7 +22,8 @@ namespace NsqClient
         private IdentifyResponse identify;
         private bool isConnected;
         private bool isExiting;
-
+        private TraceSource tracer = new TraceSource(nameof(NsqConnection), SourceLevels.All);
+        
         public event EventHandler<NsqMessageEventArgs> OnMessage;
         public event EventHandler<NsqErrorEventArgs> OnError;
         public event EventHandler<NsqDisconnectionEventArgs> OnDisconnected;
@@ -51,6 +55,16 @@ namespace NsqClient
             {
                 this.loopTask = Task.Run(ReadLoop);
             }
+        }
+
+        public Task Publish(string topicName, string body)
+        {
+            return Publish(topicName, Encoding.UTF8.GetBytes(body));
+        }
+
+        public async Task Publish(string topicName, byte[] body)
+        {
+            await WriteProtocolCommand(new PublishCommand(topicName, body));
         }
 
         internal Task WriteProtocolCommand(IToBytes command)
@@ -112,12 +126,15 @@ namespace NsqClient
                 }
                 catch (Exception ex)
                 {
+                    this.tracer.TraceEvent(TraceEventType.Error, 0, "Exception in NsqConnection.ReadLoop: {0}", ex);
+                    
                     if (ex is SocketException ||
                         ex is IOException ||
                         ex is ObjectDisposedException)
                     {
                         if (this.isExiting)
                         {
+                            this.tracer.TraceInformation("Not attempting reconnection because exiting");
                             break;
                         }
                         
@@ -138,12 +155,13 @@ namespace NsqClient
             
             this.OnDisconnected?.Invoke(this, new NsqDisconnectionEventArgs(true));
 
-            int attempts = 0;
+            int attempt = 0;
             DateTimeOffset start = DateTimeOffset.UtcNow;
 
             while (!this.isConnected)
             {
-                attempts++;
+                attempt++;
+                this.tracer.TraceInformation("Reconnection attempt {0}", attempt);
                 
                 try
                 {
@@ -152,12 +170,15 @@ namespace NsqClient
                 }
                 catch (Exception ex)
                 {
+                    this.tracer.TraceEvent(TraceEventType.Error, 0, "Exception while reconnecting: {0}", ex);
+                    
                     if (ex is SocketException ||
                         ex is IOException ||
                         ex is ObjectDisposedException)
                     {
                         if (this.isExiting)
                         {
+                            this.tracer.TraceInformation("Interrupting reconnection for exiting");
                             return;
                         }
                         
@@ -172,7 +193,7 @@ namespace NsqClient
 
             TimeSpan interval = DateTimeOffset.UtcNow - start;
             
-            this.OnReconnected?.Invoke(this, new NsqReconnectionEventArgs(attempts, interval));
+            this.OnReconnected?.Invoke(this, new NsqReconnectionEventArgs(attempt, interval));
         }
 
         private async Task ProcessNextFrame()

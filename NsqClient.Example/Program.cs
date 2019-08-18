@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Threading.Tasks;
 using NsqClient;
 
@@ -23,6 +24,8 @@ namespace NsqClient.Example
             connection.OnReconnected += OnReconnected;
             
             await connection.Connect();
+
+            await connection.Publish("test", DateTime.Now.ToString(CultureInfo.CurrentCulture));
 
             Console.ReadLine();
         }
