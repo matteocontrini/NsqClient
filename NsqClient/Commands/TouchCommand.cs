@@ -2,7 +2,7 @@ using System.Text;
 
 namespace NsqClient.Commands
 {
-    public class TouchCommand : ICommand
+    internal class TouchCommand : ICommand
     {
         private string template = "TOUCH {0}\n";
         

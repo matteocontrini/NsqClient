@@ -1,6 +1,6 @@
 namespace NsqClient.Frames
 {
-    enum ResponseType
+    internal enum ResponseType
     {
         Unknown,
         Identify,

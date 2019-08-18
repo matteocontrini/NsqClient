@@ -2,7 +2,7 @@ using System;
 
 namespace NsqClient.Frames
 {
-    abstract class Frame
+    internal abstract class Frame
     {
         public static Frame Create(int frameType, byte[] payload)
         {

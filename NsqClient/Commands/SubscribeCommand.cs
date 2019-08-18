@@ -2,7 +2,7 @@ using System.Text;
 
 namespace NsqClient.Commands
 {
-    public class SubscribeCommand : ICommand
+    internal class SubscribeCommand : ICommand
     {
         private string template = "SUB {0} {1}\n";
         

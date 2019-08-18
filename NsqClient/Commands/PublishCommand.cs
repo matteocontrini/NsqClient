@@ -4,7 +4,7 @@ using System.Text;
 
 namespace NsqClient.Commands
 {
-    public class PublishCommand : ICommand
+    internal class PublishCommand : ICommand
     {
         private readonly byte[] prefix = Encoding.ASCII.GetBytes("PUB ");
         private readonly byte[] lineFeed = Encoding.ASCII.GetBytes("\n");

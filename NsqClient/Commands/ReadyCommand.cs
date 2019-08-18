@@ -2,7 +2,7 @@ using System.Text;
 
 namespace NsqClient.Commands
 {
-    public class ReadyCommand : ICommand
+    internal class ReadyCommand : ICommand
     {
         private string template = "RDY {0}\n";
         

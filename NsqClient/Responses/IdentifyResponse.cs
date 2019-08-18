@@ -4,7 +4,7 @@ using NsqClient.Frames;
 
 namespace NsqClient.Responses
 {
-    class IdentifyResponse
+    internal class IdentifyResponse
     {
         private static readonly JsonSerializerSettings Settings;
 

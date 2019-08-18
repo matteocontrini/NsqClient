@@ -3,7 +3,7 @@ using System.Text;
 
 namespace NsqClient.Frames
 {
-    class MessageFrame : Frame
+    internal class MessageFrame : Frame
     {
         private const int TIMESTAMP_LENGTH = 8;
         private const int ATTEMPTS_LENGTH = 2;

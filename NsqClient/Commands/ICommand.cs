@@ -1,6 +1,6 @@
 namespace NsqClient.Commands
 {
-    public interface ICommand
+    internal interface ICommand
     {
         byte[] ToBytes();
     }

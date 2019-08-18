@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace NsqClient.Frames
 {
-    class FrameReader
+    internal class FrameReader
     {
         private const int FRAME_SIZE_LENGTH = 4;
         private const int FRAME_TYPE_LENGTH = 4;

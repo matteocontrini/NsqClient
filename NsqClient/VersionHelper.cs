@@ -3,9 +3,9 @@ using System.Reflection;
 
 namespace NsqClient
 {
-    public static class VersionHelper
+    internal static class VersionHelper
     {
-        public static string Version { get; }
+        internal static string Version { get; }
 
         static VersionHelper()
         {

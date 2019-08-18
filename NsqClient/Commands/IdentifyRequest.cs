@@ -1,6 +1,6 @@
 namespace NsqClient.Commands
 {
-    class IdentifyRequest
+    internal class IdentifyRequest
     {
         public string ClientId { get; set; }
         

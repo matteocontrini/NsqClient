@@ -2,7 +2,7 @@ using System.Text;
 
 namespace NsqClient.Frames
 {
-    class ResponseFrame : Frame
+    internal class ResponseFrame : Frame
     {
         public string Message { get; }
 

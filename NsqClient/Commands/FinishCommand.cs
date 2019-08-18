@@ -2,7 +2,7 @@ using System.Text;
 
 namespace NsqClient.Commands
 {
-    public class FinishCommand : ICommand
+    internal class FinishCommand : ICommand
     {
         private string template = "FIN {0}\n";
         

@@ -2,7 +2,7 @@ using System.Text;
 
 namespace NsqClient.Commands
 {
-    public class RequeueCommand : ICommand
+    internal class RequeueCommand : ICommand
     {
         private string template = "REQ {0} {1}\n";
         
