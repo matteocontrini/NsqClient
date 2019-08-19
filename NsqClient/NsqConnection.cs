@@ -12,9 +12,9 @@ using NsqClient.Responses;
 
 namespace NsqClient
 {
-    public class NsqConnection : IDisposable
+    internal class NsqConnection
     {
-        private readonly NsqConnectionOptions options;
+        private readonly NsqClientOptions options;
         private TcpClient client;
         private Task loopTask;
         private NetworkStream stream;
@@ -30,14 +30,14 @@ namespace NsqClient
         public event EventHandler<NsqDisconnectionEventArgs> OnDisconnected;
         public event EventHandler<NsqReconnectionEventArgs> OnReconnected;
 
-        public NsqConnection(NsqConnectionOptions options)
+        internal NsqConnection(NsqClientOptions options)
         {
             this.options = options;
             this.callbacksQueue = new ConcurrentQueue<TaskCompletionSource<bool>>();
             this.tracer = new TraceSource(nameof(NsqConnection), SourceLevels.All);
         }
 
-        public async Task Connect()
+        internal async Task Connect()
         {
             this.tracer.TraceInformation("Starting TCP connection...");
             
@@ -55,9 +55,13 @@ namespace NsqClient
             this.reader = new FrameReader(this.stream);
 
             await PerformHandshake();
-            await Subscribe();
-            await SendReady();
-            
+
+            if (this.options is NsqConsumerOptions consumerOptions)
+            {
+                await Subscribe(consumerOptions.Topic, consumerOptions.Channel);
+                await SendReady(consumerOptions.MaxInFlight);
+            }
+
             this.tracer.TraceInformation("Connection is ready");
             this.isConnected = true;
 
@@ -68,12 +72,12 @@ namespace NsqClient
             }
         }
 
-        public Task Publish(string topicName, string body)
+        internal Task Publish(string topicName, string body)
         {
             return Publish(topicName, Encoding.UTF8.GetBytes(body));
         }
 
-        public async Task Publish(string topicName, byte[] body)
+        internal async Task Publish(string topicName, byte[] body)
         {
             if (!this.isConnected || this.isExiting)
             {
@@ -133,9 +137,9 @@ namespace NsqClient
             }
         }
 
-        private async Task Subscribe()
+        private async Task Subscribe(string topic, string channel)
         {
-            await WriteProtocolCommand(new SubscribeCommand(this.options.Topic, this.options.Channel));
+            await WriteProtocolCommand(new SubscribeCommand(topic, channel));
 
             Frame frame = await this.reader.ReadNext();
 
@@ -145,9 +149,9 @@ namespace NsqClient
             }
         }
 
-        private async Task SendReady()
+        private async Task SendReady(int maxInFlight)
         {
-            await WriteProtocolCommand(new ReadyCommand(this.options.MaxInFlight));
+            await WriteProtocolCommand(new ReadyCommand(maxInFlight));
         }
 
         private async Task ReadLoop()
@@ -311,7 +315,7 @@ namespace NsqClient
             }
         }
 
-        public void Dispose()
+        internal void Close()
         {
             this.tracer.TraceInformation("Closing everything... Bye");
 

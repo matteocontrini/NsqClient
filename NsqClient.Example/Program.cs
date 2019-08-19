@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Globalization;
 using System.Threading.Tasks;
-using NsqClient;
 
 namespace NsqClient.Example
 {
@@ -9,7 +8,7 @@ namespace NsqClient.Example
     {
         static async Task Main(string[] args)
         {
-            var connection = new NsqConnection(new NsqConnectionOptions()
+            INsqConsumer connection = new NsqConsumer(new NsqConsumerOptions()
             {
                 Hostname = "localhost",
                 Port = 4150,
@@ -23,9 +22,17 @@ namespace NsqClient.Example
             connection.OnDisconnected += OnDisconnected;
             connection.OnReconnected += OnReconnected;
             
-            await connection.Connect();
+            await connection.ConnectAsync();
+            
+            INsqProducer producer = new NsqProducer(new NsqProducerOptions());
+            
+            await producer.ConnectAsync();
 
-            await connection.Publish("test", DateTime.Now.ToString(CultureInfo.CurrentCulture));
+            Parallel.For(0, 1000,
+                async i =>
+                {
+                    await producer.PublishAsync("test", DateTime.Now.ToString("o"));
+                });
 
             Console.ReadLine();
         }

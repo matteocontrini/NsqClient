@@ -9,15 +9,17 @@ namespace NsqClient.Tests
         [Fact]
         public async Task Test1()
         {
-            var connection = new NsqConnection(new NsqConnectionOptions()
+            var consumer = new NsqConsumer(new NsqConsumerOptions()
             {
                 Hostname = "localhost",
                 Port = 4150,
                 Topic = "test",
                 Channel = "test"
             });
+
+            await consumer.ConnectAsync();
             
-            await connection.Connect();
+            consumer.Dispose();
         }
     }
 }
