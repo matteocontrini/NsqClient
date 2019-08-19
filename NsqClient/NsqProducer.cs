@@ -32,7 +32,7 @@ namespace NsqClient
 
         public Task ConnectAsync()
         {
-            return this.conn.Connect();
+            return this.conn.FirstConnect();
         }
 
         public Task PublishAsync(string topicName, string body)

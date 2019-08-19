@@ -38,7 +38,7 @@ namespace NsqClient
 
         public Task ConnectAsync()
         {
-            return this.conn.Connect();
+            return this.conn.FirstConnect();
         }
 
         public void Dispose()

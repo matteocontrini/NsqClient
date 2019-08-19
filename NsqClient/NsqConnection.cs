@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using NsqClient.Commands;
 using NsqClient.Exceptions;
@@ -14,12 +15,14 @@ namespace NsqClient
 {
     internal class NsqConnection
     {
+        // TODO: make topic name/topic classes
         private readonly NsqClientOptions options;
         private TcpClient client;
         private Task loopTask;
         private NetworkStream stream;
         private FrameReader reader;
         private IdentifyResponse identify;
+        private int isStarted;
         private bool isConnected;
         private bool isExiting;
         private readonly TraceSource tracer;
@@ -37,7 +40,22 @@ namespace NsqClient
             this.tracer = new TraceSource(nameof(NsqConnection), SourceLevels.All);
         }
 
-        internal async Task Connect()
+        internal Task FirstConnect()
+        {
+            int wasAlreadyStarted = Interlocked.CompareExchange(ref this.isStarted, 1, 0);
+            
+            if (wasAlreadyStarted == 1)
+            {
+                this.tracer.TraceEvent(TraceEventType.Warning, 0, "First connection was requested but it has already been made");
+                return Task.CompletedTask;
+            }
+            else
+            {
+                return Connect();
+            }
+        }
+
+        private async Task Connect()
         {
             this.tracer.TraceInformation("Starting TCP connection...");
             
