@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace NsqClient.Example
 {
-    class Program
+    static class Program
     {
         static async Task Main(string[] args)
         {
@@ -28,11 +28,7 @@ namespace NsqClient.Example
             
             await producer.ConnectAsync();
 
-            Parallel.For(0, 1000,
-                async i =>
-                {
-                    await producer.PublishAsync("test", DateTime.Now.ToString("o"));
-                });
+            await producer.PublishAsync("test", DateTime.Now.ToString("o"));
 
             Console.ReadLine();
         }
