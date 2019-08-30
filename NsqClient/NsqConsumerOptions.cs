@@ -1,14 +1,12 @@
-using System.Threading;
-
 namespace NsqClient
 {
     public class NsqConsumerOptions : NsqClientOptions
     {
-        public string Topic { get; set; }
+        public string Topic { get; }
 
-        public string Channel { get; set; }
+        public string Channel { get; }
 
-        public int MaxInFlight { get; set; } = 1;
+        public int MaxInFlight { get; internal set; } = 1;
 
         public NsqConsumerOptions(string hostname, int port, string topic, string channel)
         {

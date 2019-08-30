@@ -36,6 +36,11 @@ namespace NsqClient
             remove => this.conn.OnMessage -= value;
         }
 
+        public Task SetMaxInFlight(int value)
+        {
+            return this.conn.SetMaxInFlight(value);
+        }
+
         public Task ConnectAsync()
         {
             return this.conn.FirstConnect();

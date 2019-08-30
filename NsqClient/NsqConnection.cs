@@ -129,6 +129,17 @@ namespace NsqClient
             return this.stream.WriteAsync(bytes, 0, bytes.Length);
         }
 
+        internal Task SetMaxInFlight(int value)
+        {
+            if (this.options is NsqConsumerOptions consumerOptions)
+            {
+                consumerOptions.MaxInFlight = value;
+                return this.SendReady(value);
+            }
+
+            return Task.CompletedTask;
+        }
+
         private async Task PerformHandshake()
         {
             await WriteProtocolCommand(new ProtocolVersion());
