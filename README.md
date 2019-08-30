@@ -1,6 +1,6 @@
 # NsqClient [![NuGet](https://img.shields.io/nuget/v/NsqClient?color=success)](https://www.nuget.org/packages/NsqClient) [![License](https://img.shields.io/github/license/matteocontrini/NsqClient?color=success)](https://github.com/matteocontrini/NsqClient/blob/master/LICENSE)
 
-A .NET Standard 2.0 library for interacting with [NSQ](https://nsq.io/).
+A basic .NET Standard 2.0 library for interacting with [NSQ](https://nsq.io/).
  
 Publishing and subscribing to topics are both supported, with automatic reconnection in case of network errors or failures.
 

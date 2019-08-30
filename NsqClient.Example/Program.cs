@@ -8,14 +8,8 @@ namespace NsqClient.Example
     {
         static async Task Main(string[] args)
         {
-            INsqConsumer connection = new NsqConsumer(new NsqConsumerOptions()
-            {
-                Hostname = "localhost",
-                Port = 4150,
-                Topic = "test",
-                Channel = "test",
-                MaxInFlight = 5
-            });
+            var consumerOptions = new NsqConsumerOptions("test", "test", 5);
+            INsqConsumer connection = new NsqConsumer(consumerOptions);
 
             connection.OnError += OnError;
             connection.OnMessage += OnMessage;

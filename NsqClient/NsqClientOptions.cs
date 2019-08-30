@@ -2,8 +2,8 @@ namespace NsqClient
 {
     public class NsqClientOptions
     {
-        public string Hostname { get; set; } = "localhost";
+        public string Hostname { get; protected set; } = "localhost";
 
-        public int Port { get; set; } = 4150;
+        public int Port { get; protected set; } = 4150;
     }
 }
