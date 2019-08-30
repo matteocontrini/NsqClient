@@ -4,6 +4,12 @@
         <TargetFramework>netstandard2.0</TargetFramework>
         <LangVersion>7.3</LangVersion>
         <AssemblyVersion>0.1.0</AssemblyVersion>
+        <PackageVersion>0.1.0</PackageVersion>
+        <Description>Another NSQ client for .NET Standard 2.0, with support for publishing, subscribing and automatic reconnection.</Description>
+        <RepositoryUrl>https://github.com/matteocontrini/NsqClient</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>nsq</PackageTags>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
 
     <ItemGroup>
