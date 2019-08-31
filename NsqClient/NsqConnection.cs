@@ -143,7 +143,15 @@ namespace NsqClient
         private async Task PerformHandshake()
         {
             await WriteProtocolCommand(new ProtocolVersion());
-            await WriteProtocolCommand(new IdentifyCommand());
+
+            if (this.options is NsqConsumerOptions consumerOptions)
+            {
+                await WriteProtocolCommand(new IdentifyCommand(consumerOptions.MsgTimeout));
+            }
+            else
+            {
+                await WriteProtocolCommand(new IdentifyCommand());
+            }
             
             Frame frame = await this.reader.ReadNext();
 

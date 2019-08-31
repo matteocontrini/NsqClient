@@ -35,6 +35,11 @@ namespace NsqClient.Commands
                 UserAgent = "NsqClient/" + VersionHelper.Version
             };
         }
+        
+        public IdentifyCommand(TimeSpan msgTimeout) : this()
+        {
+            this.identify.MsgTimeout = Convert.ToInt32(msgTimeout.TotalSeconds);
+        }
 
         public byte[] ToBytes()
         {
