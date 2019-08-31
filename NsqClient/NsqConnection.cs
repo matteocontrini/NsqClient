@@ -180,6 +180,11 @@ namespace NsqClient
 
         private async Task SendReady(int maxInFlight)
         {
+            if (maxInFlight > this.identify.MaxRdyCount)
+            {
+                maxInFlight = this.identify.MaxRdyCount;
+            }
+            
             await WriteProtocolCommand(new ReadyCommand(maxInFlight));
         }
 
