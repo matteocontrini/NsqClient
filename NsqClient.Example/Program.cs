@@ -8,7 +8,7 @@ namespace NsqClient.Example
     {
         static async Task Main(string[] args)
         {
-            var consumerOptions = new NsqConsumerOptions("test", "test", 5);
+            var consumerOptions = new NsqConsumerOptions("test", "test", 5, TimeSpan.FromSeconds(10));
             INsqConsumer connection = new NsqConsumer(consumerOptions);
 
             connection.OnError += OnError;

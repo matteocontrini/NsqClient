@@ -38,7 +38,7 @@ namespace NsqClient.Commands
         
         public IdentifyCommand(TimeSpan msgTimeout) : this()
         {
-            this.identify.MsgTimeout = Convert.ToInt32(msgTimeout.TotalSeconds);
+            this.identify.MsgTimeout = Convert.ToInt32(msgTimeout.TotalMilliseconds);
         }
 
         public byte[] ToBytes()
