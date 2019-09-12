@@ -274,6 +274,9 @@ namespace NsqClient
                     {
                         this.OnError?.Invoke(this, new NsqErrorEventArgs(ex));
                     }
+
+                    // Wait before retrying to avoid getting in a "fast loop"
+                    await Task.Delay(TimeSpan.FromSeconds(1));
                 }
             }
 
