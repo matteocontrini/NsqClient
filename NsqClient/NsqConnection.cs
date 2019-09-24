@@ -212,7 +212,8 @@ namespace NsqClient
                     
                     if (ex is SocketException ||
                         ex is IOException ||
-                        ex is ObjectDisposedException)
+                        ex is ObjectDisposedException ||
+                        ex is EndOfStreamException)
                     {
                         if (this.isExiting)
                         {

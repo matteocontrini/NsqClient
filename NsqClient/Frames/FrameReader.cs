@@ -19,31 +19,44 @@ namespace NsqClient.Frames
         
         public async Task<Frame> ReadNext()
         {
-            int frameLength = await ReadAsInt32(FRAME_SIZE_LENGTH);
-            int frameType = await ReadAsInt32(FRAME_TYPE_LENGTH);
+            int frameLength = await ReadInt32(FRAME_SIZE_LENGTH);
+            int frameType = await ReadInt32(FRAME_TYPE_LENGTH);
             
             byte[] payload = new byte[frameLength - FRAME_TYPE_LENGTH];
-            this.stream.Read(payload, 0, payload.Length);
+            await ReadBytesAsync(payload, 0, payload.Length);
 
             return Frame.Create(frameType, payload);
         }
 
-        private async Task<int> ReadAsInt32(int length)
+        private async Task ReadBytesAsync(byte[] buffer, int offset, int count)
         {
-            byte[] readBytes = new byte[length];
-            int amountRead = await this.stream.ReadAsync(readBytes, 0, length);
+            int bytesLeft = count;
+            int bytesRead;
 
-            if (amountRead == 0)
+            while (bytesLeft > 0 &&
+                (bytesRead = await this.stream.ReadAsync(buffer, offset, bytesLeft)) > 0)
             {
-                throw new IOException("Zero bytes were read");
+                offset += bytesRead;
+                bytesLeft -= bytesRead;
             }
+
+            if (bytesLeft > 0)
+            {
+                throw new EndOfStreamException();
+            }
+        }
+
+        private async Task<int> ReadInt32(int length)
+        {
+            byte[] bytes = new byte[length];
+            await ReadBytesAsync(bytes, 0, bytes.Length);
 
             if (BitConverter.IsLittleEndian)
             {
-                Array.Reverse(readBytes);
+                Array.Reverse(bytes);
             }
 
-            return BitConverter.ToInt32(readBytes, 0);
+            return BitConverter.ToInt32(bytes, 0);
         }
     }
 }
