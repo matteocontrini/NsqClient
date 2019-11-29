@@ -7,6 +7,10 @@ namespace NsqClient
     {
         private readonly NsqConnection conn;
         
+        public NsqProducer() : this(new NsqProducerOptions())
+        {
+        }
+
         public NsqProducer(NsqProducerOptions options)
         {
             this.conn = new NsqConnection(options);
