@@ -100,7 +100,15 @@ The available operations on a message are:
 - `msg.Requeue(TimeSpan)` to requeue with a custom delay
 - `msg.Touch()` to touch the message so that it's not delivered again
 
-The `NsqConsumerOptions` class has many constructors that allow to set hostname, port, topic, channel, maxInFlight value and message timeout.
+The `NsqConsumerOptions` class has many constructors that allow to set:
+
+- `hostname` and `port` of nsqd
+- the `topic` name
+- the `channel` name
+- the `maxInFlight` value: maximum number of messages that will be processed by this consumer at a given time
+- the `msgTimeout` for this client, after which the message will be delivered again by the server
+
+The `maxInFlight` value can also be adjusted at any given time with the `SetMaxInFlight(int)` method.
 
 ## Error handling
 
