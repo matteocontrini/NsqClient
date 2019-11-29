@@ -4,7 +4,7 @@ A basic but reliable **.NET Standard 2.0** library for publishing and subscribin
 
 It's currently used in production to handle tens of thousands of messages per week.
 
-## Features:
+## Features
 
 - Support for NSQ 1.2.0
 - Publishing of `string` or `byte[]` messages to topics
@@ -23,7 +23,7 @@ These features are not supported, but might be in the future.
 - Snappy
 - AUTH
 
-## Install
+## Installation
 
 Install [from NuGet](https://www.nuget.org/packages/NsqClient/).
 
