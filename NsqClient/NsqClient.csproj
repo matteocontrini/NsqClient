@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>7.3</LangVersion>
-    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionPrefix>1.0.1</VersionPrefix>
     <Description>Another NSQ client for .NET Standard 2.0, with support for publishing, subscribing and automatic reconnection.</Description>
     <RepositoryUrl>https://github.com/matteocontrini/NsqClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
