@@ -1,3 +1,7 @@
+using NsqClient.Commands;
+using NsqClient.Exceptions;
+using NsqClient.Frames;
+using NsqClient.Responses;
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -6,10 +10,6 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using NsqClient.Commands;
-using NsqClient.Exceptions;
-using NsqClient.Frames;
-using NsqClient.Responses;
 
 namespace NsqClient
 {
@@ -40,18 +40,17 @@ namespace NsqClient
             this.tracer = new TraceSource(nameof(NsqConnection), SourceLevels.All);
         }
 
-        internal Task FirstConnect()
+        internal async Task FirstConnect()
         {
             int wasAlreadyStarted = Interlocked.CompareExchange(ref this.isStarted, 1, 0);
             
             if (wasAlreadyStarted == 1)
             {
                 this.tracer.TraceEvent(TraceEventType.Warning, 0, "First connection was requested but it has already been made");
-                return Task.CompletedTask;
             }
             else
             {
-                return Connect();
+                await Connect().ConfigureAwait(false);
             }
         }
 
@@ -65,19 +64,19 @@ namespace NsqClient
                 ReceiveTimeout = 3000
             };
 
-            await this.client.ConnectAsync(this.options.Hostname, this.options.Port);
+            await this.client.ConnectAsync(this.options.Hostname, this.options.Port).ConfigureAwait(false);
             
             this.tracer.TraceEvent(TraceEventType.Verbose, 0, "Connected. Preparing connection...");
 
             this.stream = this.client.GetStream();
             this.reader = new FrameReader(this.stream);
 
-            await PerformHandshake();
+            await PerformHandshake().ConfigureAwait(false);
 
             if (this.options is NsqConsumerOptions consumerOptions)
             {
-                await Subscribe(consumerOptions.Topic, consumerOptions.Channel);
-                await SendReady(consumerOptions.MaxInFlight);
+                await Subscribe(consumerOptions.Topic, consumerOptions.Channel).ConfigureAwait(false);
+                await SendReady(consumerOptions.MaxInFlight).ConfigureAwait(false);
             }
 
             this.tracer.TraceInformation("Connection is ready");
@@ -109,7 +108,7 @@ namespace NsqClient
 
             try
             {
-                await WriteProtocolCommand(new PublishCommand(topicName, body));
+                await WriteProtocolCommand(new PublishCommand(topicName, body)).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -118,42 +117,43 @@ namespace NsqClient
             }
 
             // Wait for OK or fail
-            await tcs.Task;
+            await tcs.Task.ConfigureAwait(false);
             
             this.tracer.TraceInformation("Published message to topic {0}", topicName);
         }
 
-        internal Task WriteProtocolCommand(ICommand command)
+        internal async Task WriteProtocolCommand(ICommand command)
         {
             byte[] bytes = command.ToBytes();
-            return this.stream.WriteAsync(bytes, 0, bytes.Length);
+            await this.stream.WriteAsync(bytes, 0, bytes.Length).ConfigureAwait(false);
         }
 
-        internal Task SetMaxInFlight(int value)
+        internal async Task SetMaxInFlight(int value)
         {
             if (this.options is NsqConsumerOptions consumerOptions)
             {
                 consumerOptions.MaxInFlight = value;
-                return this.SendReady(value);
+                await this.SendReady(value).ConfigureAwait(false);
             }
-
-            return Task.CompletedTask;
         }
 
         private async Task PerformHandshake()
         {
-            await WriteProtocolCommand(new ProtocolVersion());
+            await WriteProtocolCommand(new ProtocolVersion())
+                .ConfigureAwait(false);
 
             if (this.options is NsqConsumerOptions consumerOptions)
             {
-                await WriteProtocolCommand(new IdentifyCommand(consumerOptions.MsgTimeout));
+                await WriteProtocolCommand(new IdentifyCommand(consumerOptions.MsgTimeout))
+                    .ConfigureAwait(false);
             }
             else
             {
-                await WriteProtocolCommand(new IdentifyCommand());
+                await WriteProtocolCommand(new IdentifyCommand())
+                    .ConfigureAwait(false);
             }
             
-            Frame frame = await this.reader.ReadNext();
+            Frame frame = await this.reader.ReadNext().ConfigureAwait(false);
 
             if (frame is ErrorFrame errorFrame)
             {
@@ -176,9 +176,10 @@ namespace NsqClient
 
         private async Task Subscribe(string topic, string channel)
         {
-            await WriteProtocolCommand(new SubscribeCommand(topic, channel));
+            await WriteProtocolCommand(new SubscribeCommand(topic, channel))
+                .ConfigureAwait(false);
 
-            Frame frame = await this.reader.ReadNext();
+            Frame frame = await this.reader.ReadNext().ConfigureAwait(false);
 
             if (frame is ErrorFrame error)
             {
@@ -193,7 +194,8 @@ namespace NsqClient
                 maxInFlight = this.identify.MaxRdyCount;
             }
             
-            await WriteProtocolCommand(new ReadyCommand(maxInFlight));
+            await WriteProtocolCommand(new ReadyCommand(maxInFlight))
+                .ConfigureAwait(false);
         }
 
         private async Task ReadLoop()
@@ -204,7 +206,7 @@ namespace NsqClient
 
                 try
                 {
-                    await ProcessNextFrame();
+                    await ProcessNextFrame().ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -222,7 +224,7 @@ namespace NsqClient
                         }
                      
                         Disconnect(willReconnect: true);
-                        await Reconnect();
+                        await Reconnect().ConfigureAwait(false);
                     }
                     else
                     {
@@ -253,7 +255,7 @@ namespace NsqClient
                 
                 try
                 {
-                    await Connect();
+                    await Connect().ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -277,7 +279,7 @@ namespace NsqClient
                     }
 
                     // Wait before retrying to avoid getting in a "fast loop"
-                    await Task.Delay(TimeSpan.FromSeconds(1));
+                    await Task.Delay(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
                 }
             }
 
@@ -297,7 +299,8 @@ namespace NsqClient
                 
                 if (responseFrame.Type == ResponseType.Heartbeat)
                 {
-                    await WriteProtocolCommand(new NopCommand());
+                    await WriteProtocolCommand(new NopCommand())
+                        .ConfigureAwait(false);
                 }
                 else if (responseFrame.Type == ResponseType.Ok)
                 {
@@ -312,7 +315,7 @@ namespace NsqClient
             {
                 this.tracer.TraceEvent(TraceEventType.Verbose, 0, "Read MessageFrame with ID {0}", messageFrame.MessageId);
                 
-                await RaiseMessageEvent(messageFrame);
+                await RaiseMessageEvent(messageFrame).ConfigureAwait(false);
             }
             else if (frame is ErrorFrame errorFrame)
             {
@@ -340,7 +343,7 @@ namespace NsqClient
 
             if (handler == null)
             {
-                await args.Requeue();
+                await args.Requeue().ConfigureAwait(false);
             }
             else
             {

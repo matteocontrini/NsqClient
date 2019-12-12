@@ -1,8 +1,8 @@
+using NsqClient.Commands;
+using NsqClient.Frames;
 using System;
 using System.Text;
 using System.Threading.Tasks;
-using NsqClient.Commands;
-using NsqClient.Frames;
 
 namespace NsqClient
 {
@@ -23,12 +23,13 @@ namespace NsqClient
             this.frame = frame;
         }
 
-        public Task Finish()
+        public async Task Finish()
         {
-            return this.connection.WriteProtocolCommand(new FinishCommand(this.frame.MessageId));
+            await this.connection.WriteProtocolCommand(new FinishCommand(this.frame.MessageId))
+                .ConfigureAwait(false);
         }
         
-        public Task Requeue(TimeSpan delay = default)
+        public async Task Requeue(TimeSpan delay = default)
         {
             if (delay == default)
             {
@@ -37,12 +38,14 @@ namespace NsqClient
 
             int milliseconds = Convert.ToInt32(delay.TotalMilliseconds);
             
-            return this.connection.WriteProtocolCommand(new RequeueCommand(this.frame.MessageId, milliseconds));
+            await this.connection.WriteProtocolCommand(new RequeueCommand(this.frame.MessageId, milliseconds))
+                .ConfigureAwait(false);
         }
         
-        public Task Touch()
+        public async Task Touch()
         {
-            return this.connection.WriteProtocolCommand(new TouchCommand(this.frame.MessageId));
+            await this.connection.WriteProtocolCommand(new TouchCommand(this.frame.MessageId))
+                .ConfigureAwait(false);
         }
     }
 }

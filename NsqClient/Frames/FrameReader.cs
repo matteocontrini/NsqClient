@@ -23,7 +23,7 @@ namespace NsqClient.Frames
             int frameType = await ReadInt32(FRAME_TYPE_LENGTH);
             
             byte[] payload = new byte[frameLength - FRAME_TYPE_LENGTH];
-            await ReadBytesAsync(payload, 0, payload.Length);
+            await ReadBytesAsync(payload, 0, payload.Length).ConfigureAwait(false);
 
             return Frame.Create(frameType, payload);
         }
@@ -34,7 +34,7 @@ namespace NsqClient.Frames
             int bytesRead;
 
             while (bytesLeft > 0 &&
-                (bytesRead = await this.stream.ReadAsync(buffer, offset, bytesLeft)) > 0)
+                (bytesRead = await this.stream.ReadAsync(buffer, offset, bytesLeft).ConfigureAwait(false)) > 0)
             {
                 offset += bytesRead;
                 bytesLeft -= bytesRead;
@@ -49,7 +49,7 @@ namespace NsqClient.Frames
         private async Task<int> ReadInt32(int length)
         {
             byte[] bytes = new byte[length];
-            await ReadBytesAsync(bytes, 0, bytes.Length);
+            await ReadBytesAsync(bytes, 0, bytes.Length).ConfigureAwait(false);
 
             if (BitConverter.IsLittleEndian)
             {
