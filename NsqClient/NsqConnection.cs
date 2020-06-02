@@ -236,7 +236,7 @@ namespace NsqClient
 
         private void Disconnect(bool willReconnect)
         {
-            this.client.Dispose();
+            this.client?.Dispose();
             this.isConnected = false;
             
             this.OnDisconnected?.Invoke(this, new NsqDisconnectionEventArgs(willReconnect));
