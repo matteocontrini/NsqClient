@@ -2,7 +2,7 @@
 
 A basic but reliable **.NET Standard 2.0** library for publishing and subscribing to [NSQ](https://nsq.io/).
 
-It's currently used in production to handle tens of thousands of messages per week.
+It's currently used in production to handle hundreds of thousands of messages per week.
 
 ## Features
 
