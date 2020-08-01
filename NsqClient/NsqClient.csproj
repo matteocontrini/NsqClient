@@ -9,6 +9,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>nsq</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/matteocontrini/NsqClient</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
